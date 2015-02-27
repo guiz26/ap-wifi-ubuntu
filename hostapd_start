@@ -1,0 +1,34 @@
+#!/bin/bash
+echo "Unlock WIFI"
+sudo rfkill unblock wifi
+sudo rfkill unblock all
+echo "Load module iwldvm & iwlwifi ... "
+rmmod iwldvm
+rmmod iwlwifi
+modprobe iwlwifi
+sleep 1
+
+echo "Activation Ad-Hoc ... "
+iwconfig wlan0 mode ad-hoc freq 2.42 essid SSID
+
+sleep 1
+
+echo "Configuration rules iptables ... "
+ifconfig wlan0 10.10.10.1
+iptables -F
+iptables -t nat -A POSTROUTING -s 10.10.10.0/24 -o eth0 -j MASQUERADE
+iptables -A FORWARD -s 10.10.10.0/24 -o eth0 -j ACCEPT
+iptables -A FORWARD -d 10.10.10.0/24 -m state --state ESTABLISHED,RELATED -i eth0 -j ACCEPT
+echo 1 >/proc/sys/net/ipv4/conf/all/forwarding
+echo 'INTERFACES=wlan0' >/etc/default/dhcp
+killall dhcpd
+dhcpd wlan0
+[ $? -eq 0 ] && echo 'OK' || exit
+sleep 1
+
+echo "Start hostapd with parameters /etc/hostapd/hostapd.conf ... "
+nmcli nm wifi off
+rfkill unblock wlan
+
+hostapd -d /etc/hostapd/hostapd.conf
+

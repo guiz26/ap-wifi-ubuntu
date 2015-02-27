@@ -1,2 +1,2 @@
 # ap-wifi-ubuntu
-Create access point ubuntu work with android
+Create access point ubuntu 14.04 work with android
